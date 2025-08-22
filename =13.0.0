@@ -1,0 +1,81 @@
+Requirement already satisfied: typing-extensions in ./agent-venv/lib/python3.12/site-packages (4.8.0)
+Collecting typing-extensions
+  Using cached typing_extensions-4.14.1-py3-none-any.whl.metadata (3.0 kB)
+Requirement already satisfied: pydantic in ./agent-venv/lib/python3.12/site-packages (2.4.2)
+Collecting pydantic
+  Using cached pydantic-2.11.7-py3-none-any.whl.metadata (67 kB)
+Requirement already satisfied: httpx in ./agent-venv/lib/python3.12/site-packages (0.25.1)
+Collecting httpx
+  Using cached httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+Requirement already satisfied: anyio in ./agent-venv/lib/python3.12/site-packages (3.7.1)
+Collecting anyio
+  Using cached anyio-4.10.0-py3-none-any.whl.metadata (4.0 kB)
+Requirement already satisfied: openai in ./agent-venv/lib/python3.12/site-packages (1.1.1)
+Collecting openai
+  Downloading openai-1.100.2-py3-none-any.whl.metadata (29 kB)
+Requirement already satisfied: requests in ./agent-venv/lib/python3.12/site-packages (2.31.0)
+Collecting requests
+  Using cached requests-2.32.5-py3-none-any.whl.metadata (4.9 kB)
+Requirement already satisfied: pydantic-core in ./agent-venv/lib/python3.12/site-packages (2.10.1)
+Collecting pydantic-core
+  Using cached pydantic_core-2.39.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (7.3 kB)
+Requirement already satisfied: websockets in ./agent-venv/lib/python3.12/site-packages (12.0)
+Collecting websockets
+  Using cached websockets-15.0.1-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.8 kB)
+Requirement already satisfied: annotated-types>=0.6.0 in ./agent-venv/lib/python3.12/site-packages (from pydantic) (0.6.0)
+Collecting pydantic-core
+  Using cached pydantic_core-2.33.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.8 kB)
+Requirement already satisfied: typing-inspection>=0.4.0 in ./agent-venv/lib/python3.12/site-packages (from pydantic) (0.4.1)
+Requirement already satisfied: certifi in ./agent-venv/lib/python3.12/site-packages (from httpx) (2023.7.22)
+Requirement already satisfied: httpcore==1.* in ./agent-venv/lib/python3.12/site-packages (from httpx) (1.0.1)
+Requirement already satisfied: idna in ./agent-venv/lib/python3.12/site-packages (from httpx) (3.4)
+Requirement already satisfied: h11<0.15,>=0.13 in ./agent-venv/lib/python3.12/site-packages (from httpcore==1.*->httpx) (0.14.0)
+Requirement already satisfied: sniffio>=1.1 in ./agent-venv/lib/python3.12/site-packages (from anyio) (1.3.0)
+Requirement already satisfied: distro<2,>=1.7.0 in ./agent-venv/lib/python3.12/site-packages (from openai) (1.8.0)
+Requirement already satisfied: jiter<1,>=0.4.0 in ./agent-venv/lib/python3.12/site-packages (from openai) (0.10.0)
+Requirement already satisfied: tqdm>4 in ./agent-venv/lib/python3.12/site-packages (from openai) (4.66.1)
+Requirement already satisfied: charset_normalizer<4,>=2 in ./agent-venv/lib/python3.12/site-packages (from requests) (3.3.2)
+Requirement already satisfied: urllib3<3,>=1.21.1 in ./agent-venv/lib/python3.12/site-packages (from requests) (2.0.7)
+Using cached typing_extensions-4.14.1-py3-none-any.whl (43 kB)
+Using cached pydantic-2.11.7-py3-none-any.whl (444 kB)
+Using cached pydantic_core-2.33.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.0 MB)
+Using cached httpx-0.28.1-py3-none-any.whl (73 kB)
+Using cached anyio-4.10.0-py3-none-any.whl (107 kB)
+Downloading openai-1.100.2-py3-none-any.whl (787 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 787.8/787.8 kB 9.1 MB/s eta 0:00:00
+Using cached requests-2.32.5-py3-none-any.whl (64 kB)
+Using cached websockets-15.0.1-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl (182 kB)
+Installing collected packages: websockets, typing-extensions, requests, pydantic-core, anyio, pydantic, httpx, openai
+  Attempting uninstall: websockets
+    Found existing installation: websockets 12.0
+    Uninstalling websockets-12.0:
+      Successfully uninstalled websockets-12.0
+  Attempting uninstall: typing-extensions
+    Found existing installation: typing_extensions 4.8.0
+    Uninstalling typing_extensions-4.8.0:
+      Successfully uninstalled typing_extensions-4.8.0
+  Attempting uninstall: requests
+    Found existing installation: requests 2.31.0
+    Uninstalling requests-2.31.0:
+      Successfully uninstalled requests-2.31.0
+  Attempting uninstall: pydantic-core
+    Found existing installation: pydantic_core 2.10.1
+    Uninstalling pydantic_core-2.10.1:
+      Successfully uninstalled pydantic_core-2.10.1
+  Attempting uninstall: anyio
+    Found existing installation: anyio 3.7.1
+    Uninstalling anyio-3.7.1:
+      Successfully uninstalled anyio-3.7.1
+  Attempting uninstall: pydantic
+    Found existing installation: pydantic 2.4.2
+    Uninstalling pydantic-2.4.2:
+      Successfully uninstalled pydantic-2.4.2
+  Attempting uninstall: httpx
+    Found existing installation: httpx 0.25.1
+    Uninstalling httpx-0.25.1:
+      Successfully uninstalled httpx-0.25.1
+  Attempting uninstall: openai
+    Found existing installation: openai 1.1.1
+    Uninstalling openai-1.1.1:
+      Successfully uninstalled openai-1.1.1
+Successfully installed anyio-4.10.0 httpx-0.28.1 openai-1.100.2 pydantic-2.11.7 pydantic-core-2.33.2 requests-2.32.5 typing-extensions-4.14.1 websockets-15.0.1
