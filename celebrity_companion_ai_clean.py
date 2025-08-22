@@ -31,11 +31,36 @@ import google.generativeai as genai
 # Portia SDK imports
 try:
     from portia import Portia
+    from portia.plan import Plan, Step, PlanInput  # Use PlanInput instead of Input
+    from portia.execution_agents.base_execution_agent import BaseExecutionAgent
+    from portia.execution_agents.default_execution_agent import DefaultExecutionAgent
+    from portia.tool import Tool, ToolRunContext
+    from portia.config import Config
+    from portia.end_user import EndUser
+    from portia.storage import AgentMemory
+    from portia.plan_run import PlanRun
+    from typing import TYPE_CHECKING
+    
+    if TYPE_CHECKING:
+        # Import types for annotations only
+        from portia.tool import Tool as ToolType
+        from portia.tool import ToolRunContext as ToolRunContextType
+        from portia.end_user import EndUser as EndUserType
+    
     PORTIA_AVAILABLE = True
     print("✅ Portia SDK imported successfully")
 except ImportError as e:
     print(f"❌ Portia SDK not available: {e}")
     PORTIA_AVAILABLE = False
+    # Define dummy classes for when Portia is not available
+    Tool = object
+    ToolRunContext = object
+    DefaultExecutionAgent = object
+    Config = object
+    EndUser = object
+    AgentMemory = object
+    PlanRun = object
+    Plan = object
 
 # TTS imports
 try:
@@ -45,19 +70,108 @@ except ImportError:
     print("❌ Google Cloud TTS not available")
     GOOGLE_TTS_AVAILABLE = False
 
+class CelebrityResponseTool(Tool):
+    """Portia Tool for generating celebrity responses"""
+    
+    def __init__(self, celebrities, model, current_celebrity_getter):
+        super().__init__()
+        self.celebrities = celebrities
+        self.model = model
+        self.get_current_celebrity = current_celebrity_getter
+        
+    @property
+    def name(self) -> str:
+        return "celebrity_response_generator"
+        
+    @property
+    def description(self) -> str:
+        return "Generates authentic responses as specific celebrity personalities"
+    
+    def run(self, context, user_input: str) -> str:
+        """Generate celebrity response using the specified personality"""
+        current_celebrity = self.get_current_celebrity()
+        celeb = self.celebrities[current_celebrity]
+        
+        # Build celebrity-specific prompt
+        if current_celebrity == "peter":
+            system_prompt = f"""You are Peter Griffin from Family Guy. You are speaking as Peter Griffin ONLY.
+            Key traits: Use "heh-heh" laughs, Rhode Island dialect, beer references, goofy but well-meaning.
+            DO NOT speak like other celebrities. You are ONLY Peter Griffin."""
+            
+        elif current_celebrity == "scarlett":
+            system_prompt = f"""You are Scarlett Johansson, the sophisticated actress.
+            Key traits: Intelligence, wit, emotional intelligence, contemporary culture references.
+            DO NOT speak like other celebrities. You are ONLY Scarlett Johansson."""
+            
+        elif current_celebrity == "morgan":
+            system_prompt = f"""You are Morgan Freeman, the wise narrator.
+            Key traits: Deep wisdom, philosophical insight, thoughtful pauses, life lessons.
+            DO NOT speak like other celebrities. You are ONLY Morgan Freeman."""
+            
+        elif current_celebrity == "david":
+            system_prompt = f"""You are David Attenborough, the nature documentarian.
+            Key traits: Wonder about nature, gentle British tone, educational spirit, curiosity.
+            DO NOT speak like other celebrities. You are ONLY David Attenborough."""
+        
+        full_prompt = f"""{system_prompt}
+        
+        User input: "{user_input}"
+        Respond as {celeb['name']} in 2-3 sentences, staying completely in character.
+        """
+        
+        # Generate response
+        response = self.model.generate_content(full_prompt)
+        return response.text.strip()
+
+
+class CelebrityExecutionAgent(DefaultExecutionAgent):
+    """Custom execution agent for celebrity response generation following Portia SDK patterns"""
+    
+    def __init__(self, plan, plan_run, config, agent_memory, 
+                 end_user, celebrity_tool, execution_hooks=None):
+        """Initialize the celebrity execution agent"""
+        super().__init__(
+            plan=plan,
+            plan_run=plan_run, 
+            config=config,
+            agent_memory=agent_memory,
+            end_user=end_user,
+            tool=celebrity_tool,
+            execution_hooks=execution_hooks
+        )
+        self.celebrity_tool = celebrity_tool
+
 class CelebrityCompanionAI:
     def __init__(self):
         """Initialize with Portia SDK integration"""
         # Load environment
         load_dotenv()
         
-        # Initialize Portia SDK
+        # Initialize Portia SDK with proper configuration
+        self.portia = None
+        self.portia_config = None
+        self.end_user = None
+        self.agent_memory = None
+        
         if PORTIA_AVAILABLE:
-            self.portia = Portia()
-            print("✅ Portia SDK initialized")
-        else:
-            self.portia = None
-            print("⚠️  Running without Portia SDK")
+            try:
+                # Initialize Portia components properly
+                self.portia_config = Config()  # Use default config
+                self.end_user = EndUser(id="celebrity_user", name="Celebrity Companion User")
+                self.agent_memory = AgentMemory()  # Initialize agent memory
+                
+                # Create custom celebrity response tool
+                self.celebrity_tool = CelebrityResponseTool(
+                    celebrities=self.celebrities,
+                    model=self.model,
+                    current_celebrity_getter=lambda: self.current_celebrity
+                )
+                
+                print("✅ Portia SDK initialized with proper configuration")
+            except Exception as e:
+                print(f"⚠️  Portia SDK initialization failed: {str(e)}")
+                print("🔄 Will use direct Gemini mode")
+                self.portia = None
         
         # Simple state using basic data structures
         self.conversation_history = []
@@ -136,6 +250,21 @@ class CelebrityCompanionAI:
         
         if GOOGLE_TTS_AVAILABLE:
             try:
+                if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+                    self.tts_client = texttospeech.TextToSpeechClient()
+                    self.tts_available = True
+                    print("✅ Google Cloud TTS initialized")
+                else:
+                    print("⚠️  Google Cloud TTS requires GOOGLE_APPLICATION_CREDENTIALS environment variable")
+                    print("🔄 Voice will be text-only")
+            except Exception as e:
+                print(f"⚠️  Google Cloud TTS failed: {str(e)}")
+                print("🔄 Voice will be text-only")
+        self.tts_client = None
+        self.tts_available = False
+        
+        if GOOGLE_TTS_AVAILABLE:
+            try:
                 # Check for Google Cloud credentials
                 if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
                     self.tts_client = texttospeech.TextToSpeechClient()
@@ -167,45 +296,53 @@ class CelebrityCompanionAI:
             print("❌ Audio system: check failed")
             return False
     
-    def analyze_conversation_context(self, user_input: str) -> Dict[str, Any]:
-        """Portia Planning Agent: Analyze conversation context and plan response strategy"""
-        if not self.portia:
-            return self._simple_context_analysis(user_input)
+    def _simple_response_generation(self, user_input: str, context_analysis: Dict[str, Any]) -> str:
+        """Simple response generation for fallback"""
+        celeb = self.celebrities[self.current_celebrity]
         
-        try:
-            # Create a planning task for conversation analysis
-            planning_prompt = f"""
-            Analyze this user input and conversation context to determine:
-            1. Emotional state and mood
-            2. Conversation topic and intensity
-            3. Best celebrity match for response
-            4. Response strategy and approach
+        # Build celebrity-specific prompt (same as the tool but for fallback)
+        if self.current_celebrity == "peter":
+            system_prompt = f"""You are Peter Griffin from Family Guy. You are speaking as Peter Griffin ONLY.
+            Key traits: Use "heh-heh" laughs, Rhode Island dialect, beer references, goofy but well-meaning.
+            DO NOT speak like other celebrities. You are ONLY Peter Griffin."""
             
-            User input: "{user_input}"
-            Current celebrity: {self.celebrities[self.current_celebrity]['name']}
-            Conversation history: {len(self.conversation_history)} exchanges
-            Current state: {self.conversation_state}
+        elif self.current_celebrity == "scarlett":
+            system_prompt = f"""You are Scarlett Johansson, the sophisticated actress.
+            Key traits: Intelligence, wit, emotional intelligence, contemporary culture references.
+            DO NOT speak like other celebrities. You are ONLY Scarlett Johansson."""
             
-            Provide a structured analysis for the Portia system.
-            """
+        elif self.current_celebrity == "morgan":
+            system_prompt = f"""You are Morgan Freeman, the wise narrator.
+            Key traits: Deep wisdom, philosophical insight, thoughtful pauses, life lessons.
+            DO NOT speak like other celebrities. You are ONLY Morgan Freeman."""
             
-            # Use Portia's planning capabilities
-            plan = self.portia.plan(planning_prompt)
-            
-            # Extract insights from the plan
-            context_analysis = {
-                "mood": self._extract_mood_from_plan(plan),
-                "topic": self._extract_topic_from_plan(plan),
-                "intensity": self._extract_intensity_from_plan(plan),
-                "recommended_celebrity": self._extract_celebrity_recommendation(plan),
-                "response_strategy": self._extract_response_strategy(plan)
-            }
-            
-            return context_analysis
-            
-        except Exception as e:
-            print(f"⚠️  Portia planning failed, using fallback: {e}")
-            return self._simple_context_analysis(user_input)
+        elif self.current_celebrity == "david":
+            system_prompt = f"""You are David Attenborough, the nature documentarian.
+            Key traits: Wonder about nature, gentle British tone, educational spirit, curiosity.
+            DO NOT speak like other celebrities. You are ONLY David Attenborough."""
+        
+        full_prompt = f"""{system_prompt}
+        
+        User input: "{user_input}"
+        Respond as {celeb['name']} in 2-3 sentences, staying completely in character.
+        """
+        
+        response = self.model.generate_content(full_prompt)
+        return response.text.strip()
+    
+    def select_optimal_celebrity(self, user_input: str) -> str:
+        """Simple celebrity selection based on user input analysis"""
+        user_lower = user_input.lower()
+        
+        # Simple emotion/topic detection for celebrity selection
+        if any(word in user_lower for word in ["stress", "anxious", "worried", "overwhelm"]):
+            return "david"  # Calming nature wisdom
+        elif any(word in user_lower for word in ["sad", "lonely", "grief", "confused"]):
+            return "morgan"  # Deep wisdom and comfort
+        elif any(word in user_lower for word in ["angry", "frustrated", "relationship"]):
+            return "scarlett"  # Emotional intelligence  
+        else:
+            return "peter"  # Default to humor and relatability
     
     def _simple_context_analysis(self, user_input: str) -> Dict[str, Any]:
         """Fallback context analysis without Portia"""
@@ -346,58 +483,6 @@ class CelebrityCompanionAI:
             else:
                 return "peter"  # Light approach for low intensity
     
-    def _extract_mood_from_plan(self, plan) -> str:
-        """Extract mood from Portia plan (placeholder implementation)"""
-        # This would parse the actual Portia plan structure
-        return "neutral"
-    
-    def _extract_topic_from_plan(self, plan) -> str:
-        """Extract topic from Portia plan (placeholder implementation)"""
-        return "general"
-    
-    def _extract_intensity_from_plan(self, plan) -> str:
-        """Extract intensity from Portia plan (placeholder implementation)"""
-        return "low"
-    
-    def _extract_celebrity_recommendation(self, plan) -> str:
-        """Extract celebrity recommendation from Portia plan (placeholder implementation)"""
-        return self.current_celebrity
-    
-    def _extract_response_strategy(self, plan) -> str:
-        """Extract response strategy from Portia plan (placeholder implementation)"""
-        return "conversational"
-    
-    def execute_response_generation(self, user_input: str, context_analysis: Dict[str, Any]) -> str:
-        """Portia Execution Agent: Execute the planned response generation"""
-        if not self.portia:
-            return self._simple_response_generation(user_input, context_analysis)
-        
-        try:
-            # Create execution task for response generation
-            execution_prompt = f"""
-            Execute response generation based on the planned strategy:
-            
-            Context Analysis: {context_analysis}
-            User Input: "{user_input}"
-            Target Celebrity: {self.celebrities[self.current_celebrity]['name']}
-            
-            Generate a response that follows the planned strategy and maintains
-            the celebrity's authentic personality and voice.
-            """
-            
-            # Use Portia's execution capabilities
-            execution_result = self.portia.execute(execution_prompt)
-            
-            # Extract the generated response
-            if hasattr(execution_result, 'result'):
-                return execution_result.result
-            else:
-                return self._simple_response_generation(user_input, context_analysis)
-                
-        except Exception as e:
-            print(f"⚠️  Portia execution failed, using fallback: {e}")
-            return self._simple_response_generation(user_input, context_analysis)
-    
     def _simple_response_generation(self, user_input: str, context_analysis: Dict[str, Any]) -> str:
         """Fallback response generation without Portia"""
         celeb = self.celebrities[self.current_celebrity]
@@ -478,66 +563,6 @@ class CelebrityCompanionAI:
         
         return celebrity_response
     
-    def introspect_conversation_state(self, user_input: str, response: str, context_analysis: Dict[str, Any]):
-        """Portia Introspection Agent: Monitor and adapt conversation state"""
-        if not self.portia:
-            return self._simple_state_update(user_input, response, context_analysis)
-        
-        try:
-            # Create introspection task
-            introspection_prompt = f"""
-            Analyze the conversation state and determine if any adaptations are needed:
-            
-            User Input: "{user_input}"
-            Generated Response: "{response}"
-            Context Analysis: {context_analysis}
-            Current State: {self.conversation_state}
-            
-            Should we:
-            1. Switch celebrities for better emotional match?
-            2. Adjust conversation strategy?
-            3. Maintain current approach?
-            
-            Provide recommendations for conversation adaptation.
-            """
-            
-            # Use Portia's introspection capabilities
-            introspection_result = self.portia.introspect(introspection_prompt)
-            
-            # Apply insights from introspection
-            self._apply_introspection_insights(introspection_result)
-            
-        except Exception as e:
-            print(f"⚠️  Portia introspection failed, using fallback: {e}")
-            self._simple_state_update(user_input, response, context_analysis)
-    
-    def _simple_state_update(self, user_input: str, response: str, context_analysis: Dict[str, Any]):
-        """Fallback state update without Portia"""
-        # Update conversation state
-        self.conversation_state.update({
-            "mood": context_analysis["mood"],
-            "topic": context_analysis["topic"],
-            "intensity": context_analysis["intensity"]
-        })
-        
-        # DISABLED: Don't automatically switch celebrities after response generation
-        # This was causing personality mixing where the response would be generated 
-        # by one celebrity but displayed with another celebrity's name
-        
-        # Check if celebrity switch is recommended
-        # recommended_celebrity = context_analysis.get("recommended_celebrity")
-        # if recommended_celebrity and recommended_celebrity != self.current_celebrity:
-        #     # Only switch if it's been a while since last switch
-        #     if not self.conversation_state["last_switch"] or \
-        #        time.time() - self.conversation_state["last_switch"] > 300:  # 5 minutes
-        #         self.switch_celebrity(recommended_celebrity)
-    
-    def _apply_introspection_insights(self, introspection_result):
-        """Apply insights from Portia introspection (placeholder implementation)"""
-        # This would parse the actual Portia introspection result
-        # and apply the recommended changes
-        pass
-    
     def switch_celebrity(self, celebrity_key):
         """Switch to a different celebrity"""
         if celebrity_key in self.celebrities:
@@ -609,17 +634,59 @@ class CelebrityCompanionAI:
         response_celebrity = self.current_celebrity
         response_celebrity_name = self.celebrities[response_celebrity]['name']
         
-        # Portia Planning Agent: Analyze context and plan strategy
-        print("🧠 Planning Agent: Analyzing conversation context...")
-        context_analysis = self.analyze_conversation_context(user_input)
-        
-        # Portia Execution Agent: Generate response
-        print("⚡ Execution Agent: Generating celebrity response...")
-        celebrity_response = self.execute_response_generation(user_input, context_analysis)
-        
-        # Portia Introspection Agent: Monitor and adapt
-        print("🔍 Introspection Agent: Monitoring conversation state...")
-        self.introspect_conversation_state(user_input, celebrity_response, context_analysis)
+        # Use proper Portia SDK execution if available
+        if PORTIA_AVAILABLE and hasattr(self, 'celebrity_tool') and self.portia_config:
+            try:
+                # Create a proper Portia Plan with Step and Input
+                celebrity_step = Step(
+                    step_id="celebrity_response",
+                    task=f"Generate response as {response_celebrity_name} to: {user_input}",
+                    tool=self.celebrity_tool,
+                    inputs=[
+                        PlanInput(name="user_input", value=user_input, description="User's message")
+                    ]
+                )
+                
+                plan = Plan(steps=[celebrity_step])
+                
+                # Create PlanRun
+                plan_run = PlanRun(plan=plan, end_user=self.end_user)
+                
+                print("🧠 Portia: Creating execution agent...")
+                
+                # Create proper execution agent following the DefaultExecutionAgent pattern
+                execution_agent = CelebrityExecutionAgent(
+                    plan=plan,
+                    plan_run=plan_run,
+                    config=self.portia_config,
+                    agent_memory=self.agent_memory,
+                    end_user=self.end_user,
+                    celebrity_tool=self.celebrity_tool
+                )
+                
+                print("⚡ Portia: Executing plan...")
+                
+                # Execute the plan using the execution agent
+                output = execution_agent.execute_sync()
+                
+                print("✅ Portia: Plan executed successfully")
+                
+                # Extract the response from the output
+                if output and hasattr(output, 'result'):
+                    celebrity_response = str(output.result)
+                elif output and hasattr(output, 'step_outputs'):
+                    celebrity_response = str(list(output.step_outputs.values())[0])
+                else:
+                    # Fallback if output format is unexpected
+                    celebrity_response = self._simple_response_generation(user_input, {"mood": "neutral"})
+                    
+            except Exception as e:
+                print(f"⚠️  Portia execution failed: {str(e)}")
+                print("� Using direct Gemini fallback")
+                celebrity_response = self._simple_response_generation(user_input, {"mood": "neutral"})
+        else:
+            # Direct Gemini fallback
+            celebrity_response = self._simple_response_generation(user_input, {"mood": "neutral"})
         
         # Add response to history with the LOCKED celebrity name (prevents mixing)
         self.conversation_history.append(f"{response_celebrity_name}: {celebrity_response}")
