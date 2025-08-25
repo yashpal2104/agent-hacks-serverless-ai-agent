@@ -211,3 +211,25 @@ __marimo__/
 *-credentials.json
 *-service-account.json
 keen-diode-417213-aca26ece4428.json
+
+# Project-specific generated files
+frames/
+celebrity_audio/
+companion_audio/
+static/uploads/
+temp/
+
+# Audio files
+*.wav
+*.mp3
+*.ogg
+
+# Session and history files
+*_history.json
+david_*.json
+chat_history.json
+portia_chat_history.json
+streamlit_chat_history.json
+
+# Portia cache
+.portia/

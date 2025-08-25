@@ -124,11 +124,20 @@ def encode_image(image_path):
             time.sleep(0.1)
 
 
-def play_audio(text):
-    """Play audio using available voice method"""
+# Global flag for stopping audio playback
+_is_playing = False
+_current_audio_process = None
+
+def play_audio(text, speed=1.1, pitch=-1.0):
+    """Play audio using available voice method with customizable parameters and stop functionality"""
+    global _is_playing, _current_audio_process
+    
     if not VOICE_READY:
         print("🔊 Text only (no voice available)")
         return
+    
+    _is_playing = True
+    _current_audio_process = None
         
     try:
         if VOICE_METHOD == "elevenlabs":
@@ -143,7 +152,8 @@ def play_audio(text):
             with open(file_path, "wb") as f:
                 f.write(audio)
 
-            play(audio)
+            if _is_playing:  # Check if not stopped
+                play(audio)
             
         elif VOICE_METHOD == "google_tts":
             print("🎙️ Sir David preparing his dynamic documentary narration...")
@@ -171,6 +181,9 @@ def play_audio(text):
             
             response = None
             for voice_option in voice_options:
+                if not _is_playing:  # Check if stopped during setup
+                    return
+                    
                 try:
                     voice = texttospeech.VoiceSelectionParams(
                         language_code="en-GB",
@@ -180,9 +193,9 @@ def play_audio(text):
                     
                     audio_config = texttospeech.AudioConfig(
                         audio_encoding=texttospeech.AudioEncoding.MP3,
-                        speaking_rate=1.1,   # Faster, more engaging pace
-                        pitch=-1.0,          # Slightly deeper but not boring
-                        volume_gain_db=4.0,  # Strong, confident presence
+                        speaking_rate=speed,     # Use dynamic speed parameter
+                        pitch=pitch,             # Use dynamic pitch parameter
+                        volume_gain_db=4.0,      # Strong, confident presence
                         effects_profile_id=["headphone-class-device"]  # Clear, crisp sound
                     )
                     
@@ -199,8 +212,11 @@ def play_audio(text):
                     print(f"⚠️ Voice {voice_option} failed: {voice_error}")
                     continue
             
-            if not response:
-                print("❌ All British voices failed")
+            if not response or not _is_playing:
+                if not _is_playing:
+                    print("⏹️ Audio generation stopped")
+                else:
+                    print("❌ All British voices failed")
                 return
             
             # Save and play audio
@@ -208,20 +224,22 @@ def play_audio(text):
             temp_file.write(response.audio_content)
             temp_file.close()
             
-            print("🔊 Sir David speaking with dynamic documentary excitement!")
-            pygame.mixer.music.load(temp_file.name)
-            pygame.mixer.music.play()
-            
-            while pygame.mixer.music.get_busy():
-                pygame.time.wait(100)
+            if _is_playing:
+                print("🔊 Sir David speaking with dynamic documentary excitement!")
+                pygame.mixer.music.load(temp_file.name)
+                pygame.mixer.music.play()
+                
+                while pygame.mixer.music.get_busy() and _is_playing:
+                    pygame.time.wait(100)
             
             os.unlink(temp_file.name)
             
         elif VOICE_METHOD == "system_tts":
             print("🎙️ Sir David speaking with enhanced dynamic system voice...")
             
-            # Make the voice more dynamic - faster and with varied emphasis
-            tts_engine.setProperty('rate', 180)  # Faster, more engaging
+            # Make the voice more dynamic - use speed parameter (convert to words per minute)
+            rate_wpm = int(speed * 150)  # Convert speed multiplier to words per minute
+            tts_engine.setProperty('rate', rate_wpm)  # Dynamic speed based on user setting
             tts_engine.setProperty('volume', 1.0)  # Full volume for presence
             
             # Add dynamic emphasis and varied pacing like David Attenborough
@@ -230,12 +248,35 @@ def play_audio(text):
             enhanced_text = enhanced_text.replace('remarkable', 'REMARKABLE')
             enhanced_text = enhanced_text.replace('extraordinary', 'EXTRAORDINARY')
             
-            tts_engine.say(enhanced_text)
-            tts_engine.runAndWait()
+            if _is_playing:
+                tts_engine.say(enhanced_text)
+                tts_engine.runAndWait()
             
     except Exception as e:
         print(f"🔊 Audio failed: {e}")
         print("💬 (Text only)")
+    finally:
+        _is_playing = False
+
+def stop_audio():
+    """Stop current audio playback"""
+    global _is_playing, _current_audio_process
+    
+    _is_playing = False
+    
+    try:
+        if VOICE_METHOD == "google_tts" and pygame.mixer.get_init():
+            pygame.mixer.music.stop()
+            print("⏹️ Audio playback stopped")
+    except Exception as e:
+        print(f"⚠️ Error stopping audio: {e}")
+    
+    if _current_audio_process:
+        try:
+            _current_audio_process.terminate()
+            _current_audio_process = None
+        except:
+            pass
 
 
 def generate_new_line(base64_image):

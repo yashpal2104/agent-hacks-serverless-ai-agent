@@ -50,6 +50,9 @@ class AdvancedCelebrityVoice:
         # Initialize pygame for audio playback
         pygame.mixer.init()
         
+        # Stop functionality
+        self.is_speaking = False
+        
     def setup_google_voices(self):
         """Setup Google Cloud TTS voices with authentic celebrity configurations"""
         self.celebrity_voices = {
@@ -178,6 +181,8 @@ class AdvancedCelebrityVoice:
         """Generate and play natural celebrity speech"""
         print(f"🎬 {celebrity_name} is preparing to speak naturally...")
         
+        self.is_speaking = True
+        
         try:
             if self.use_google_tts:
                 # Generate with Google TTS (very natural)
@@ -195,7 +200,7 @@ class AdvancedCelebrityVoice:
                 pygame.mixer.music.play()
                 
                 # Wait for playback to complete
-                while pygame.mixer.music.get_busy():
+                while pygame.mixer.music.get_busy() and self.is_speaking:
                     pygame.time.wait(100)
                 
                 # Cleanup
@@ -212,14 +217,17 @@ class AdvancedCelebrityVoice:
                 pygame.mixer.music.play()
                 
                 # Wait for playback
-                while pygame.mixer.music.get_busy():
+                while pygame.mixer.music.get_busy() and self.is_speaking:
                     pygame.time.wait(100)
                 
                 # Cleanup
                 os.unlink(audio_path)
             
-            print(f"✅ {celebrity_name} finished speaking naturally!")
-            
+            if self.is_speaking:
+                print(f"✅ {celebrity_name} finished speaking naturally!")
+            else:
+                print(f"⏹️ {celebrity_name} was stopped")
+                
         except Exception as e:
             print(f"❌ Error generating speech: {e}")
             print("Falling back to simple text display...")
@@ -227,6 +235,17 @@ class AdvancedCelebrityVoice:
             print("─" * 40)
             print(text)
             print("─" * 40)
+        finally:
+            self.is_speaking = False
+    
+    def stop_speaking(self):
+        """Stop current speech playback"""
+        self.is_speaking = False
+        try:
+            pygame.mixer.music.stop()
+            print("⏹️ Speech stopped")
+        except:
+            pass
 
 def setup_content_generator():
     """Setup celebrity content generation"""
@@ -362,7 +381,7 @@ def main():
     # Create Gmail reading task
     task = f"Search Gmail for emails from {sender_email} and provide a detailed summary of each email. Read each email in order and provide the content clearly."
     
-    print(f"\n🔍 Running Gmail task for {sender_email}...")
+    print(f"\n� Running Gmail task for {sender_email}...")
     
     try:
         plan_run = portia.run(task)
@@ -402,7 +421,7 @@ def main():
             # Resume after clarifications
             plan_run = portia.resume(plan_run)
         
-        print(f"📊 Task status: {plan_run.state}")
+        print(f"� Task status: {plan_run.state}")
         
         # Extract Gmail content from task result
         gmail_content = ""
