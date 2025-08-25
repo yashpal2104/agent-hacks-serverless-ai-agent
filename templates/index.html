@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Agent AI Workflow</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar for Controls -->
+        <div class="sidebar">
+            <h2>AI Control Panel</h2>
+
+            <!-- Agent Selector -->
+            <div class="control-group">
+                <label>Active Agent</label>
+                <div class="agent-selector">
+                    <button id="agent-chat" class="agent-btn active" data-agent="chat">🤖 Celebrity Chat</button>
+                    <button id="agent-narrator" class="agent-btn" data-agent="narrator">👁️ Live Narrator</button>
+                    <button id="agent-gmail" class="agent-btn" data-agent="gmail">📧 Gmail Reader</button>
+                </div>
+            </div>
+
+            <!-- Celebrity Selector -->
+            <div id="celebrity-controls" class="control-group">
+                <label for="celebrity-select">Celebrity Persona</label>
+                <select id="celebrity-select">
+                    <option value="scarlett">Scarlett Johansson</option>
+                    <option value="morgan">Morgan Freeman</option>
+                    <option value="david">David Attenborough</option>
+                    <option value="peter">Peter Griffin</option>
+                </select>
+            </div>
+
+            <!-- Gmail Reader Controls -->
+            <div id="gmail-controls" class="control-group hidden">
+                <label for="sender-email">Sender's Email</label>
+                <input type="email" id="sender-email" placeholder="e.g., newsletter@example.com">
+                <button id="read-emails-btn">Read Emails</button>
+            </div>
+            
+            <!-- Status Display -->
+            <div class="status-box">
+                <strong>Status:</strong>
+                <p id="status-message">Connecting to server...</p>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <div id="welcome-message">
+                <h1>Welcome to the Multi-Agent AI</h1>
+                <p>Select an agent from the control panel to begin.</p>
+            </div>
+
+            <!-- Live Narrator View -->
+            <div id="narrator-view" class="hidden">
+                <video id="webcam-feed" autoplay playsinline></video>
+                <p>AI is watching and narrating...</p>
+            </div>
+
+            <!-- Chat/Log Display -->
+            <div id="log-container"></div>
+
+            <!-- Input Area -->
+            <div id="input-area" class="hidden">
+                <input type="text" id="message-input" placeholder="Type your message here...">
+                <button id="send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
