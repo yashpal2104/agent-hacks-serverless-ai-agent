@@ -10,6 +10,7 @@
 **The Ultimate Celebrity AI Assistant Suite with Real-World Integration**
 
 *Transform your digital life with AI-powered celebrity companions that manage your emails, calendar, and provide live commentary with authentic voices!*
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/9e6b5634-0073-4275-8b44-bbd5c8334f7e" />
 
 </div>
 
