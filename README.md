@@ -79,6 +79,53 @@ python celebrity_gmail_reader.py
 
 ---
 
+## 🖥️ Run Locally with Streamlit
+
+You can experience the Celebrity AI Suite on your own machine using [Streamlit](https://streamlit.io/).  
+This provides a simple, interactive web interface that runs locally.
+
+### Step-by-Step Streamlit Setup
+
+1. **Ensure Python 3.8+ is installed.**
+
+2. **Clone the repository:**
+   ```bash
+   git clone https://github.com/yashpal2104/agent-hacks-serverless-ai-agent.git
+   cd agent-hacks-serverless-ai-agent
+   ```
+
+3. **Create a virtual environment (recommended):**
+   ```bash
+   python -m venv agent-venv
+   source agent-venv/bin/activate  # Linux/Mac
+   agent-venv\Scripts\activate     # Windows
+   ```
+
+4. **Install dependencies including Streamlit:**
+   ```bash
+   pip install -r requirements.txt
+   pip install streamlit
+   ```
+
+5. **Copy and edit environment variables:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your API keys as described above
+   ```
+
+6. **Run the Streamlit App:**
+   ```bash
+   streamlit run streamlit_app.py
+   ```
+   > If your Streamlit app has a different filename, replace `streamlit_app.py` with the correct name.
+
+7. **Open your browser and navigate to:**  
+   [http://localhost:8501](http://localhost:8501)
+
+**Now you can interact with your AI celebrity assistant through a friendly and intuitive web interface!**
+
+---
+
 ## 🏗️ Technology Stack
 
 - **AI & Language Models:** Google Gemini 1.5 Flash, Anthropic Claude 3.5 Haiku, OpenAI GPT-4
@@ -172,6 +219,7 @@ ELEVENLABS_API_KEY=your_elevenlabs_key_here
 ├── narrator.py                         # Webcam narrator
 ├── celebrity_gmail_reader.py           # Email reader
 ├── celebrity_companion_ai_clean.py     # Multi-personality chatbot
+├── streamlit_app.py                    # Streamlit user interface
 ├── .env.example                        # Env template
 ├── requirements.txt                    # Python dependencies
 ├── GOOGLE_TTS_SETUP.md                 # Setup guide
@@ -196,7 +244,7 @@ ELEVENLABS_API_KEY=your_elevenlabs_key_here
 - **Emotional Intelligence:** Celebrity selection adapts to your mood
 - **Performance Optimizations:** Lazy loading, audio caching, efficient memory, graceful fallback
 - **Security & Privacy:** Local audio processing, secure API integration, encrypted data, privacy-first design
-- **User Experience:** Beautiful CLI, audio-visual feedback, helpful error messages, cross-platform support
+- **User Experience:** Beautiful CLI & Streamlit UI, audio-visual feedback, helpful error messages, cross-platform support
 
 ---
 
@@ -294,6 +342,7 @@ Get started in 5 minutes:
    python celebrity_calendar_assistant.py      # Calendar assistant
    python narrator.py                         # Webcam commentary
    python celebrity_companion_ai_clean.py     # General chat
+   streamlit run streamlit_app.py             # Interactive web app
    ```
 
 **Enjoy your flawless AI celebrity experience! 🎉**
